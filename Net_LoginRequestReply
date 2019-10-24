@@ -1,0 +1,22 @@
+public class Net_LoginRequestReply : NetMsg
+{
+    public ByteFlag succesFlag { get; set; }
+    public string username { get; private set; }
+    public string token { get; private set; }
+    public int connectionId { get; private set; }
+    
+    public Net_LoginRequestReply(ByteFlag byteFlag, string username, string token, int connectionId)
+    {
+        OperationCode = NetOperationCode.LoginRequestReply;
+        this.succesFlag = byteFlag;
+        this.username = username;
+        this.token = token;
+        this.connectionId = connectionId;
+    }
+
+    public override string ToString()
+    {
+        return $"{(int)OperationCode}|{(byte)succesFlag}|{username}|{token}|{connectionId}";
+    }
+    
+}
