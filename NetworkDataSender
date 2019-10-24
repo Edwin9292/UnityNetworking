@@ -1,0 +1,36 @@
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using UnityEngine;
+using UnityEngine.Networking;
+
+#pragma warning disable CS0618 // Type or member is obsolete
+public class NetworkDataSender
+{
+    readonly int BYTE_SIZE;
+    NetworkConnection connection;
+
+    public NetworkDataSender(int byte_size)
+    {
+        BYTE_SIZE = byte_size;
+        this.connection = Client.GetInstance().GetConnection();
+    }
+    
+    public void SendServerReliable(NetMsg msg)
+    {
+        byte error;
+        if (connection == null) return;
+        if (!connection.isStarted) return;
+
+        byte[] buffer = new byte[BYTE_SIZE];
+
+        using (MemoryStream ms = new MemoryStream(buffer))
+        {
+            BinaryWriter writer = new BinaryWriter(ms);
+            writer.Write(msg.ToString());
+
+            Debug.Log($"msg = {msg.ToString()}, message byte size = " + (int)ms.Position);
+            NetworkTransport.Send(connection.hostId, connection.connectionId, connection.reliableChannel, buffer, BYTE_SIZE, out error);
+        }
+    }
+}
