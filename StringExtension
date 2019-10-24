@@ -1,0 +1,9 @@
+using System;
+
+public static class StringExtension
+{
+    public static string[] Split(this string str, string splitter)
+    {
+        return str.Split(new[] { splitter }, StringSplitOptions.None);
+    }
+}
