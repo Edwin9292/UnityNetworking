@@ -1,0 +1,107 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using UnityEngine;
+using UnityEngine.Networking;
+using UnityEngine.SceneManagement;
+
+public class NetworkDataReceiver
+{
+    public event EventHandler Connected;
+    public event EventHandler Disconnected;
+    public event EventHandler<DataReceivedArgs> DataReceived;
+
+    private NetworkConnection connection;
+    private Client clientPlugin;
+    private readonly int BYTE_SIZE;
+
+    public NetworkDataReceiver(int byte_size)
+    {
+        this.clientPlugin = Client.GetInstance();
+        this.connection = clientPlugin.GetConnection();
+        this.BYTE_SIZE = byte_size;
+
+        Client.OnUpdate += Update;
+
+        Connected += OnConnectEvent;
+        Disconnected += OnDisconnectEvent;
+    }
+    ~NetworkDataReceiver()
+    {
+        Client.OnUpdate -= Update;
+    }
+
+    void Update()
+    {
+        ReceiveNetworkMessages();
+    }
+
+    public void ReceiveNetworkMessages()
+    {
+        byte error;
+        NetworkEventType type;
+        do
+        {
+            if (connection == null) return;
+            if (!connection.isStarted) return;
+
+            int receivingHostId;
+            int channelId;
+            byte[] receivingBuffer = new byte[BYTE_SIZE];
+            int dataSize;
+            int connectionId;
+
+            type = NetworkTransport.Receive(out receivingHostId, out connectionId, out channelId, receivingBuffer, BYTE_SIZE, out dataSize, out error);
+            switch (type)
+            {
+                case NetworkEventType.Nothing:
+                    break;
+
+                case NetworkEventType.ConnectEvent:
+                    Connected?.Invoke(this, new EventArgs());
+                    break;
+
+                case NetworkEventType.DisconnectEvent:
+                    Disconnected?.Invoke(this, new EventArgs());
+                    break;
+
+                case NetworkEventType.DataEvent:
+                    using (MemoryStream ms = new MemoryStream(receivingBuffer))
+                    { 
+                        BinaryReader reader = new BinaryReader(ms);
+                        string[] data = reader.ReadString().ToString().Split("|");
+                        DataReceived?.Invoke(this, new DataReceivedArgs(data));
+                    }
+                    break;
+
+                default:
+                    Debug.LogError("Unknown network message received");
+                    break;
+            }
+
+        }
+        while (type != NetworkEventType.Nothing);
+    }
+
+    private void OnConnectEvent(object sender, EventArgs args)
+    {
+        Lobby.EnableInput();
+        Lobby.OpenLoginPanel();
+        Lobby.ChangeAuthenticationText("Succesfully connected to the server! \nPlease enter your username and password to login", Color.green);
+    }
+
+
+    private void OnDisconnectEvent(object sender, EventArgs args) => Client.GetInstance().DisconnectFromServer();
+
+}
+
+public class DataReceivedArgs
+{
+    public string[] data { get; set; }
+
+    public DataReceivedArgs(string[] data)
+    {
+        this.data = data;
+    }
+}
