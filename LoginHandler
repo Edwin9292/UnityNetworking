@@ -1,0 +1,73 @@
+using UnityEngine;
+using UnityEngine.Networking;
+using UnityEngine.SceneManagement;
+
+public class LoginHandler 
+{
+    private NetworkDataHandler plugin;
+
+    public LoginHandler(NetworkDataHandler plugin)
+    {
+        this.plugin = plugin;
+        plugin.LoginRequestReplyReceived += OnLoginRequestReply;
+    }
+
+    ~LoginHandler()
+    {
+        plugin.LoginRequestReplyReceived -= OnLoginRequestReply;
+    }
+    
+    public static void Login(string username, string password)
+    {
+        if (!Utility.isUsername(username))
+        {
+            Lobby.ChangeAuthenticationText("Invalid username entered!", Color.red);
+            return;
+        }
+
+        if (password == null || password == "")
+        {
+            Lobby.ChangeAuthenticationText("Please enter your password.", Color.red);
+            return;
+        }
+
+        Lobby.DisableInput();
+        Client.GetInstance().SendToServer(QosType.Reliable, new Net_LoginRequest(username, Utility.Sha256FromString(password)));
+    }
+    
+    private void OnLoginRequestReply(object sender, LoginRequestReplyArgs args)
+    {
+        switch (args.flag)
+        {
+            case ByteFlag.UnexpectedFlag:
+                break;
+            case ByteFlag.Succes:
+                SceneManager.LoadScene("Scene2");
+                return;
+            case ByteFlag.InvalidDataReceived:
+                Lobby.ChangeAuthenticationText("Invalid data received by the server", Color.red);
+                break;
+            case ByteFlag.InvalidUsernameOrPassword:
+                Lobby.ChangeAuthenticationText("Invalid username or password", Color.red);
+                break;
+            case ByteFlag.InvalidUsername:
+                Lobby.ChangeAuthenticationText("Invalid username", Color.red);
+                break;
+            case ByteFlag.InvalidPassword:
+                Lobby.ChangeAuthenticationText("Invalid password", Color.red);
+                break;
+            case ByteFlag.BlackListedIpAdress:
+                Lobby.ChangeAuthenticationText("Your connection has been blacklisted. If this is a mistake, please file a support ticket.", Color.red);
+                Lobby.OpenConnectToServerPanel();
+                return;
+            case ByteFlag.BannedAccount:
+                Lobby.ChangeAuthenticationText("Your account has been banned. If this is a mistake, please file a support ticket.", Color.red);
+                Lobby.OpenConnectToServerPanel();
+                return;
+            default:
+                break;
+        }
+        Lobby.GetInstance().SelectFirstInputField();
+        Lobby.EnableInput();
+    }
+}
