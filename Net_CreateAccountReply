@@ -1,0 +1,16 @@
+[System.Serializable]
+public class Net_CreateAccountReply : NetMsg
+{
+    public ByteFlag succes { get; private set; }
+
+    public Net_CreateAccountReply(ByteFlag succes)
+    {
+        OperationCode = NetOperationCode.CreateAccountReply;
+        this.succes = succes;
+    }
+
+    public override string ToString()
+    {
+        return $"{(int)OperationCode}|{succes}";
+    }
+}
