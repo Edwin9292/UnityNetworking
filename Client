@@ -19,7 +19,7 @@ public class Client : MonoBehaviour
     [SerializeField] private int PORT = 20000;
     [SerializeField] private int WEB_PORT = 20001;
     [SerializeField] private int BYTE_SIZE = 1024;
-    [SerializeField] private string SERVER_IP = "82.75.138.104";
+    [SerializeField] private string SERVER_IP = "127.0.0.1";
 
     private static Client instance;
 
