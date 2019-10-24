@@ -1,0 +1,61 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Networking;
+
+#pragma warning disable CS0618 // Type or member is obsolete
+public class NetworkConnection
+{
+    private readonly int MAX_PLAYERS = 100;
+    private readonly int PORT = 20000;
+    private readonly int WEB_PORT = 20001;
+    private readonly int BYTE_SIZE = 1024;
+    private readonly string SERVER_IP = "82.75.138.104";
+
+    public byte reliableChannel { get; private set; }
+    public int connectionId { get; private set; }
+    public int hostId { get; private set; }
+    private byte error;
+
+    public bool isStarted;
+
+    public NetworkConnection(int messageByteSize, int maxPlayers = 100, int port = 20000, int webPort = 20001, string serverIP = "82.75.138.104")
+    {
+        MAX_PLAYERS = maxPlayers;
+        PORT = port;
+        WEB_PORT = webPort;
+        BYTE_SIZE = messageByteSize;
+        SERVER_IP = serverIP;
+
+        InitServer();
+    }
+
+
+    public void InitServer()
+    {
+        Lobby.DisableInput();
+        //connection initialisation
+        NetworkTransport.Init();
+
+        ConnectionConfig config = new ConnectionConfig();
+        reliableChannel = config.AddChannel(QosType.Reliable);
+
+        HostTopology topology = new HostTopology(config, MAX_PLAYERS);
+
+        //Client only connection
+        int hostId = NetworkTransport.AddHost(topology, 0);
+#if UNITY_WEBGL && !UNITY_EDITOR
+        connectionId = NetworkTransport.Connect(hostId, SERVER_IP, WEB_PORT, 0, out error);
+#else
+        connectionId = NetworkTransport.Connect(hostId, SERVER_IP, PORT, 0, out error);
+#endif
+        Lobby.ChangeAuthenticationText($"Attempting to connect to {SERVER_IP}", Color.white);
+        isStarted = true;
+    }
+
+    public void Shutdown()
+    {
+        isStarted = false;
+        NetworkTransport.Shutdown();
+    }
+}
