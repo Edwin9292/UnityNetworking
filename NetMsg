@@ -1,0 +1,22 @@
+public enum NetOperationCode
+{
+    None = 0,
+    CreateAccount = 10,
+    CreateAccountReply = 11,
+    LoginRequest = 20,
+    LoginRequestReply = 21,
+    Command = 30,
+}
+
+
+[System.Serializable]
+public abstract class NetMsg
+{
+    public NetOperationCode OperationCode { get; protected set; }
+
+    public NetMsg()
+    {
+        OperationCode = NetOperationCode.None;
+    }
+
+}
