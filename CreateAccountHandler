@@ -1,0 +1,76 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Networking;
+
+public class CreateAccountHandler
+{
+    private NetworkDataHandler plugin;
+
+    public CreateAccountHandler(NetworkDataHandler plugin)
+    {
+        plugin.CreateAccountReplyReceived += OnCreateAccountReply;
+        this.plugin = plugin;
+    }
+    ~CreateAccountHandler()
+    {
+        plugin.CreateAccountReplyReceived -= OnCreateAccountReply;
+    }
+
+    public static void CreateAccount(string username, string password, string email)
+    {
+        if (!Utility.isUsername(username))
+        {
+            Lobby.ChangeAuthenticationText("Invalid username entered!", Color.red);
+            return;
+        }
+
+        if (!Utility.IsEmail(email))
+        {
+            Lobby.ChangeAuthenticationText("Invalid email entered!", Color.red);
+            return;
+        }
+        Client.GetInstance().SendToServer(QosType.Reliable, new Net_CreateAccount(username, Utility.Sha256FromString(password), email));
+        Lobby.DisableInput();
+    }
+
+    private void OnCreateAccountReply(object sender, CreateAccountReplyArgs args)
+    {
+        switch (args.flag)
+        {
+            case ByteFlag.UnexpectedFlag:
+                break;
+            case ByteFlag.Succes:
+                Lobby.ChangeAuthenticationText("Account succesfully created", Color.green);
+                Lobby.OpenLoginPanel();
+                break;
+            case ByteFlag.InvalidDataReceived:
+                Lobby.ChangeAuthenticationText("Invalid data received by the server", Color.red);
+                break;
+            case ByteFlag.InvalidUsernameOrPassword:
+                Lobby.ChangeAuthenticationText("Invalid username or password entered", Color.red);
+                break;
+            case ByteFlag.InvalidUsername:
+                Lobby.ChangeAuthenticationText("Invalid username entered", Color.red);
+                break;
+            case ByteFlag.InvalidPassword:
+                Lobby.ChangeAuthenticationText("Invalid password entered", Color.red);
+                break;
+            case ByteFlag.InvalidEmailAdress:
+                Lobby.ChangeAuthenticationText("Invalid email entered", Color.red);
+                break;
+            case ByteFlag.UsernameAlreadyExists:
+                Lobby.ChangeAuthenticationText("Username already exists", Color.red);
+                break;
+            case ByteFlag.BlackListedIpAdress:
+                Lobby.ChangeAuthenticationText(
+                    "You are blacklisted from the server, you are unable to create an account. If this is a mistake, please file a support ticket.", Color.red);
+                break;
+            default:
+                Lobby.ChangeAuthenticationText("Unexpected data received from the server, please file a support ticket", Color.red);
+                break;
+        }
+        Lobby.EnableInput();
+        Lobby.GetInstance().SelectFirstInputField();
+    }
+}
