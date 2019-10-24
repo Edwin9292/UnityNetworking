@@ -1,0 +1,13 @@
+public enum ByteFlag
+{
+    UnexpectedFlag = 0,
+    Succes = 1,
+    InvalidDataReceived = 2,
+    InvalidUsernameOrPassword = 10,
+    InvalidUsername = 11,
+    InvalidPassword = 12,
+    InvalidEmailAdress = 13,
+    UsernameAlreadyExists = 20,
+    BlackListedIpAdress = 30,
+    BannedAccount = 31,
+}
