@@ -1,0 +1,18 @@
+[System.Serializable]
+public class Net_LoginRequest : NetMsg
+{
+    public string usernameOrEmail { get; private set; }
+    public string password { get; private set; }
+    
+    public Net_LoginRequest(string usernameOrEmail, string password)
+    {
+        OperationCode = NetOperationCode.LoginRequest;
+        this.usernameOrEmail = usernameOrEmail;
+        this.password = password;
+    }
+
+    public override string ToString()
+    {
+        return $"{(int)OperationCode}|{usernameOrEmail}|{password}";
+    }
+}
