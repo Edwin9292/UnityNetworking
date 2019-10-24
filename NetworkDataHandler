@@ -1,0 +1,71 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Networking;
+using UnityEngine.SceneManagement;
+
+public class NetworkDataHandler
+{
+    public event EventHandler<CreateAccountReplyArgs> CreateAccountReplyReceived;
+    public event EventHandler<LoginRequestReplyArgs> LoginRequestReplyReceived;
+    
+    public NetworkDataHandler()
+    {
+        CreateAccountHandler createAccountHandler = new CreateAccountHandler(this);
+        LoginHandler loginHandler = new LoginHandler(this);
+    }
+
+    public void OnData(object sender, DataReceivedArgs e)
+    {
+        string[] data = e.data;
+
+        NetOperationCode operationCode = (NetOperationCode)Enum.Parse(typeof(NetOperationCode), data[0]);
+
+        switch (operationCode)
+        {
+            case NetOperationCode.None:
+                break;
+
+            case NetOperationCode.CreateAccountReply:
+                if (data.Length != 2) return;
+                CreateAccountReplyReceived?.Invoke(this, new CreateAccountReplyArgs(data[1]));
+                break;
+
+            case NetOperationCode.LoginRequestReply:
+                if (data.Length != 5) return;
+                LoginRequestReplyReceived?.Invoke(this, new LoginRequestReplyArgs(data[1], data[2], data[3], int.Parse(data[4])));
+                break;
+                
+            default:
+                Debug.Log("Unexpected NetOperationCode Received");
+                break;
+        }
+    }
+}
+
+public class LoginRequestReplyArgs
+{
+    public ByteFlag flag { get; set; }
+    public string username { get; set; }
+    public string token { get; set; }
+    public int connectionId { get; set; }
+
+    public LoginRequestReplyArgs(string flag, string username, string token, int connectionId)
+    {
+        this.flag = (ByteFlag)Enum.Parse(typeof(ByteFlag), flag);
+        this.username = username;
+        this.token = token;
+        this.connectionId = connectionId;
+    }
+}
+
+public class CreateAccountReplyArgs
+{
+    public ByteFlag flag { get; set; }
+
+    public CreateAccountReplyArgs(string flag)
+    {
+        this.flag = (ByteFlag)Enum.Parse(typeof(ByteFlag), flag);
+    }
+}
