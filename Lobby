@@ -1,0 +1,137 @@
+using TMPro;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
+
+public class Lobby : MonoBehaviour
+{
+    [SerializeField]  GameObject LobbyPanel = null;
+
+     public TMP_Text WelcomeText;
+
+    [SerializeField]  GameObject LoginPanel = null;
+    [SerializeField]  TMP_InputField LoginUsername = null;
+    [SerializeField]  TMP_InputField LoginPassword = null;
+
+    [SerializeField]  GameObject CreatePanel = null;
+    [SerializeField]  TMP_InputField CreateUsername = null;
+    [SerializeField]  TMP_InputField CreatePassword = null;
+    [SerializeField]  TMP_InputField CreateEmail = null;
+
+    [SerializeField]  GameObject ConnectToServerPanel = null;
+    [SerializeField]  TMP_Text AuthenticationMessage = null;
+
+    private static Lobby instance;
+
+    private void Start() => instance = this;
+    private void Update()
+    {
+        if(Input.GetKeyDown(KeyCode.Tab))
+        {
+            if (!LobbyPanel.GetComponent<CanvasGroup>().interactable) return;
+            SelectNextInputField();
+        }
+        if (Input.GetKeyDown(KeyCode.Return))
+        {
+            if (!LobbyPanel.GetComponent<CanvasGroup>().interactable) return;
+            if(EventSystem.current.currentSelectedGameObject == LoginPassword.gameObject)
+            {
+                if (LoginUsername.text != null || LoginUsername.text != "")
+                {
+                    LoginAccount();
+                }
+            }
+            else
+            {
+                SelectNextInputField();
+            }
+        }
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            if (!ConnectToServerPanel.activeSelf)
+            {
+                OpenConnectToServerPanel();
+            }
+        }
+    }
+
+    public static Lobby GetInstance() => instance;
+
+    public void SelectFirstInputField()
+    {
+        if (LoginPanel.activeSelf)
+            EventSystem.current.SetSelectedGameObject(LoginUsername.gameObject);
+        else if (CreatePanel.activeSelf)
+            EventSystem.current.SetSelectedGameObject(CreateUsername.gameObject);
+        else if (ConnectToServerPanel.activeSelf)
+            EventSystem.current.SetSelectedGameObject(null);
+    }
+    public void SelectNextInputField()
+    {
+        if (EventSystem.current.currentSelectedGameObject == null)
+        {
+            SelectFirstInputField();
+            return;
+        }
+
+        Selectable next = EventSystem.current.currentSelectedGameObject.GetComponent<Selectable>().FindSelectableOnDown();
+        if (next != null)
+            EventSystem.current.SetSelectedGameObject(next.gameObject);
+        else
+            SelectFirstInputField();
+    }
+
+    public static void OpenConnectToServerPanel()
+    {
+        instance.ConnectToServerPanel.SetActive(true);
+        instance.LoginPanel.SetActive(false);
+        instance.CreatePanel.SetActive(false);
+        instance.WelcomeText.transform.parent.gameObject.SetActive(false);
+        instance.SelectFirstInputField();
+    }
+    public static void OpenLoginPanel()
+    {
+        instance.ConnectToServerPanel.SetActive(false);
+        instance.LoginPanel.SetActive(true);
+        instance.CreatePanel.SetActive(false);
+        instance.WelcomeText.transform.parent.gameObject.SetActive(true);
+        instance.SelectFirstInputField();
+    }
+    public static void OpenCreatePanel()
+    {
+        instance.ConnectToServerPanel.SetActive(false);
+        instance.LoginPanel.SetActive(false);
+        instance.CreatePanel.SetActive(true);
+        instance.WelcomeText.transform.parent.gameObject.SetActive(true);
+        instance.SelectFirstInputField();
+    }
+
+    public static void EnableInput() => instance.LobbyPanel.GetComponent<CanvasGroup>().interactable = true;
+    public static void DisableInput() => instance.LobbyPanel.GetComponent<CanvasGroup>().interactable = false;
+
+    public static void ChangeAuthenticationText(string message, Color color)
+    {
+        instance.AuthenticationMessage.text = message;
+        instance.AuthenticationMessage.color = color;
+    }
+
+
+    #region functionCallers
+    public void ConnectToServer() => Client.GetInstance().ConnectToServer();
+    public void LoginAccount()
+    {
+        string username = LoginUsername.text.Trim();
+        string password = LoginPassword.text.Trim();
+
+        LoginHandler.Login(username, password);
+    }
+    public void CreateAccount()
+    {
+        string username = CreateUsername.text.Trim();
+        string password = CreatePassword.text.Trim();
+        string email = CreateEmail.text.Trim();
+
+        CreateAccountHandler.CreateAccount(username, password, email);
+    }
+    #endregion
+}
