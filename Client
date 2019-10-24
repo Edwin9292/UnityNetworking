@@ -1,0 +1,137 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Threading;
+using System.Timers;
+using TMPro;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.Networking;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+
+#pragma warning disable CS0618 // Type or member is obsolete
+public class Client : MonoBehaviour
+{
+    [SerializeField] private int MAX_PLAYERS = 100;
+    [SerializeField] private int PORT = 20000;
+    [SerializeField] private int WEB_PORT = 20001;
+    [SerializeField] private int BYTE_SIZE = 1024;
+    [SerializeField] private string SERVER_IP = "82.75.138.104";
+
+    private static Client instance;
+
+    private NetworkConnection connection;
+    private NetworkDataReceiver dataReceiver;
+    private NetworkDataHandler dataHandler;
+    private NetworkDataSender dataSender;
+
+    public static Action OnUpdate;
+
+    #region monobehavior
+    private void Awake()
+    {
+        if (instance == null)
+        {
+            instance = this;
+            DontDestroyOnLoad(this);
+        }
+        else
+        {
+            if (instance != this)
+            {
+                Destroy(this);
+            }
+        }
+    }
+    private void Update() => OnUpdate?.Invoke();
+    #endregion
+
+    public static Client GetInstance() => instance;
+    public NetworkConnection GetConnection() => this.connection;
+    public NetworkDataHandler GetDataHandler() => this.dataHandler;
+
+    public void ConnectToServer()
+    {
+        if (this.connection != null)
+        {
+            if (this.connection.isStarted)
+            {
+                Lobby.OpenLoginPanel();
+                return;
+            }
+            else
+            {
+                this.connection.InitServer();
+                return;
+            }
+        }
+        this.connection = new NetworkConnection(BYTE_SIZE, MAX_PLAYERS, PORT, WEB_PORT, SERVER_IP);
+
+        dataSender = new NetworkDataSender(BYTE_SIZE);
+        dataReceiver = new NetworkDataReceiver(BYTE_SIZE);
+        dataHandler = new NetworkDataHandler();
+
+        dataReceiver.DataReceived += dataHandler.OnData;
+    }
+
+    public void DisconnectFromServer()
+    {
+        if(connection != null)
+        {
+            StartCoroutine(OnDisconnectEvent());
+        }
+    }
+
+    private IEnumerator OnDisconnectEvent()
+    {
+        if (!SceneManager.GetSceneByName("Lobby").isLoaded)
+        {
+            AsyncOperation asyncLoadLevel = SceneManager.LoadSceneAsync("Lobby");
+            while (!asyncLoadLevel.isDone)
+            {
+                yield return null;
+            }
+        }
+        connection.Shutdown();
+        Lobby.OpenConnectToServerPanel();
+        Lobby.ChangeAuthenticationText("Connection to the server has been lost", Color.red);
+        Lobby.EnableInput();
+    }
+
+    public void SendToServer(QosType channelType, NetMsg message)
+    {
+        switch (channelType)
+        {
+            case QosType.Unreliable:
+                break;
+            case QosType.UnreliableFragmented:
+                break;
+            case QosType.UnreliableSequenced:
+                break;
+            case QosType.Reliable:
+                dataSender.SendServerReliable(message);
+                break;
+            case QosType.ReliableFragmented:
+                break;
+            case QosType.ReliableSequenced:
+                break;
+            case QosType.StateUpdate:
+                break;
+            case QosType.ReliableStateUpdate:
+                break;
+            case QosType.AllCostDelivery:
+                break;
+            case QosType.UnreliableFragmentedSequenced:
+                break;
+            case QosType.ReliableFragmentedSequenced:
+                break;
+            default:
+                Debug.Log("ChannelType not implemented");
+                break;
+        }
+    }
+}
+
